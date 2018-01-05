@@ -1,0 +1,87 @@
+package irc
+
+import (
+	"fmt"
+)
+
+// log logs the message with the logger
+func (c *Client) log(format string, args ...interface{}) {
+	if c.debug && format != "" {
+		c.logger.Printf(format, args...)
+	}
+}
+
+// Sendf sends a message to the server and appends CR-LF at the end of the string
+func (c *Client) Sendf(format string, args ...interface{}) error {
+	// Format the string
+	s := fmt.Sprintf(format+eol, args...)
+
+	// Log message if we have debugging enabled
+	c.log(s)
+
+	// Write it to server and return
+	_, err := c.conn.Write([]byte(s))
+	return err
+}
+
+// Privmsg sends a message to a channel or nick
+func (c *Client) Privmsg(target, message string) error {
+	return c.Sendf("PRIVMSG %s :%s", target, message)
+}
+
+// Privmsgf sends a privmsg and accepts a format string as message argument
+func (c *Client) Privmsgf(target, format string, args ...interface{}) error {
+	return c.Privmsg(target, fmt.Sprintf(format, args...))
+}
+
+// Notice sends a notice
+func (c *Client) Notice(target, message string) error {
+	return c.Sendf("NOTICE %s :%s", target, message)
+}
+
+// Noticef sends a notice and accepts a format string as message argument
+func (c *Client) Noticef(target, format string, args ...interface{}) error {
+	return c.Notice(target, fmt.Sprintf(format, args...))
+}
+
+// Mode sets mode on a channel for a nick
+func (c *Client) Mode(channel, mode, target string) error {
+	return c.Sendf("MODE %s %s %s", channel, mode, target)
+}
+
+// Nick sets the nick
+func (c *Client) Nick(nick string) error {
+	return c.Sendf("NICK %s", nick)
+}
+
+// GetNick returns the current nick
+func (c *Client) GetNick() string {
+	return c.currentNick
+}
+
+// ReclaimNick tries to reclaim the nick
+func (c *Client) ReclaimNick() {
+	// Acquire a lock to prevent race condition
+	c.infoMu.Lock()
+
+	// Check if we actually don't have the wanted nick
+	if c.nick != c.currentNick {
+		// Perform a WHOIS request
+		// We check for event 401 in events.go and tries to reclaim the nick if it's free
+		c.Whois(c.nick)
+	}
+
+	// Release the lock
+	c.infoMu.Unlock()
+}
+
+// Whois sends a WHOIS request
+func (c *Client) Whois(nick string) error {
+	return c.Sendf("WHOIS %s", nick)
+}
+
+// Quit sends a QUIT message to the server and terminates the connection
+func (c *Client) Quit(message string) {
+	c.Sendf("QUIT :%s", message)
+	c.quit <- true
+}
