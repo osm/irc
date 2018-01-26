@@ -17,7 +17,11 @@ func WithAddr(addr string) Option {
 
 // WithChannel sets the channel that the client should join on connect, this can be called mupltiple times
 func WithChannel(ch string) Option {
-	return func(c *Client) { c.channels = append(c.channels, ch) }
+	return func(c *Client) {
+		if ch != "" {
+			c.channels = append(c.channels, ch)
+		}
+	}
 }
 
 // WithConn sets the client connection, this can be omitted if you supply an address with WithAddr
