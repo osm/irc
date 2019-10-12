@@ -13,6 +13,11 @@ func (c *Client) log(format string, args ...interface{}) {
 
 // Sendf sends a message to the server and appends CR-LF at the end of the string
 func (c *Client) Sendf(format string, args ...interface{}) error {
+	// Make sure that conn isn't nil before we proceed.
+	if c.conn == nil {
+		return nil
+	}
+
 	// Format the string
 	s := fmt.Sprintf(format+eol, args...)
 
