@@ -27,7 +27,7 @@ func (c *Client) coreEvents() {
 		// Our current nick is not the nick that we want
 		// Let's acquire a lock and change it
 		if m.Params == fmt.Sprintf("%s %s :No such nick or channel name", c.currentNick, c.nick) ||
-			m.Params == fmt.Sprintf("%s %s :No suck nick", c.currentNick, c.nick) {
+			m.Params == fmt.Sprintf("%s %s :No such nick", c.currentNick, c.nick) {
 			// Acquire lock
 			c.infoMu.Lock()
 
