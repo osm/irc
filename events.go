@@ -21,6 +21,23 @@ func (c *Client) coreEvents() {
 		c.ReclaimNick()
 	})
 
+	// If the nick that PARTs is our configured nick we'll reclaim it.
+	c.Handle("QUIT", func(m *Message) {
+		if m.Name == c.nick {
+			// Acquire lock
+			c.infoMu.Lock()
+
+			// Send NICK command
+			c.Nick(c.nick)
+
+			// Set current nick to what we just changed it to be
+			c.currentNick = c.nick
+
+			// Release the lock
+			c.infoMu.Unlock()
+		}
+	})
+
 	// 401 is returned by the server after a WHOIS request if the nick is not in use
 	// Let's verify if the WHOIS request was made from a nick reclaim attempt
 	c.Handle("401", func(m *Message) {
