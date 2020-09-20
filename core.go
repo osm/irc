@@ -21,6 +21,12 @@ func (c *Client) Sendf(format string, args ...interface{}) error {
 	// Format the string
 	s := fmt.Sprintf(format+eol, args...)
 
+	// An IRC message has a limit of maximum 510 characters, so we'll just
+	// truncate the rest of the message if it's too big.
+	if len(s) > 510 {
+		s = s[0:510] + eol
+	}
+
 	// Log message if we have debugging enabled
 	c.log(s)
 
