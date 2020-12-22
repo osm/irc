@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/textproto"
 	"time"
+	"unicode/utf8"
 )
 
 // Connect connects to the IRC server
@@ -91,6 +92,21 @@ func (c *Client) reconnect() error {
 	return fmt.Errorf("unable to reconnect, giving up")
 }
 
+// fixEncoding checks whether or not the given buf is utf-8 encoded, if it
+// isn't we'll assume it is encoded using ISO8859-1, in which case we'll
+// encode it to use UTF-8 instead.
+func fixEncoding(buf []byte) string {
+	if utf8.Valid(buf) {
+		return string(buf)
+	}
+
+	ret := make([]rune, len(buf))
+	for i, b := range buf {
+		ret[i] = rune(b)
+	}
+	return string(ret)
+}
+
 // loop is responsible for reading and parsing messages from the server
 func (c *Client) loop() error {
 	// Initialize connection reader
@@ -106,7 +122,8 @@ func (c *Client) loop() error {
 
 		default:
 			// Read one line from the connection
-			l, err := tr.ReadLine()
+			b, err := tr.ReadLineBytes()
+			l := fixEncoding(b)
 
 			// Print the line if we have debugging enabled
 			c.log(l)
