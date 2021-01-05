@@ -47,7 +47,7 @@ func (c *Client) Privmsg(target, message string) error {
 
 	// The given command + message is shorter than 510 characters so we'll
 	// send the message right away.
-	if len(cmd)+len(message) < 510 {
+	if len(cmd)+len(message) <= 510 {
 		return c.Sendf("%s%s", cmd, message)
 	}
 
@@ -65,7 +65,7 @@ func (c *Client) Privmsg(target, message string) error {
 
 	words := strings.Split(message, " ")
 	for i, w := range words {
-		if len(cmd)+len(msg)+len(w)+1 > 510 || i == len(words)-1 {
+		if len(cmd)+len(msg)+len(w)+1 >= 510 || i == len(words)-1 {
 			msgs = append(msgs, msg)
 			msg = ""
 		}
