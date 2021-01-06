@@ -2,7 +2,8 @@ package irc
 
 import (
 	"fmt"
-	"strings"
+
+	"github.com/osm/ww"
 )
 
 // log logs the message with the logger
@@ -24,6 +25,9 @@ func (c *Client) Sendf(format string, args ...interface{}) error {
 
 	// An IRC message has a limit of maximum 510 characters, so we'll just
 	// truncate the rest of the message if it's too big.
+	// We are calling the ww.Wrap function before the data gets here, but
+	// it is a possibility that a really long word (510 characters) gets
+	// to this point, and if it does we'll truncate the message.
 	if len(s) > 510 {
 		s = s[0:510] + eol
 	}
@@ -38,46 +42,8 @@ func (c *Client) Sendf(format string, args ...interface{}) error {
 
 // Privmsg sends a message to a channel or nick
 func (c *Client) Privmsg(target, message string) error {
-	// cmd contains the PRIVMSG command with the included target, but we
-	// don't include the message since we need to calculate if the message
-	// is too big before we send it.
-	// If the message is too big we'll chop it up into smaller pieces and
-	// sends it with multiple calls to c.Sendf.
 	cmd := fmt.Sprintf("PRIVMSG %s :", target)
-
-	// The given command + message is shorter than 510 characters so we'll
-	// send the message right away.
-	if len(cmd)+len(message) <= 510 {
-		return c.Sendf("%s%s", cmd, message)
-	}
-
-	// We have a longer message, to be able to pass the message furger
-	// we'll apply the following logic:
-	// 1) Split the message into a slice of words
-	// 2) Iterate over each word
-	// 3) Compile a new message with each word as long as it is smaller
-	// than then 510 character limit
-	// 4) If the limit is reached we'll append it to a slice
-	// 5) Iterate over the msgs slice and send each message in the order
-	// it was added.
-	var msgs []string
-	msg := ""
-
-	words := strings.Split(message, " ")
-	for i, w := range words {
-		if len(cmd)+len(msg)+len(w)+1 >= 510 || i == len(words)-1 {
-			msgs = append(msgs, msg)
-			msg = ""
-		}
-
-		if msg != "" {
-			msg += " " + w
-		} else {
-			msg = w
-		}
-	}
-
-	for _, m := range msgs {
+	for _, m := range ww.Wrap(message, 510-len(cmd)) {
 		if err := c.Sendf("%s%s", cmd, m); err != nil {
 			return err
 		}
@@ -93,7 +59,15 @@ func (c *Client) Privmsgf(target, format string, args ...interface{}) error {
 
 // Notice sends a notice
 func (c *Client) Notice(target, message string) error {
-	return c.Sendf("NOTICE %s :%s", target, message)
+	cmd := fmt.Sprintf("NOTICE %s :", target)
+
+	for _, m := range ww.Wrap(message, 510-len(cmd)) {
+		if err := c.Sendf("%s%s", cmd, m); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Noticef sends a notice and accepts a format string as message argument
