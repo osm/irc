@@ -146,6 +146,17 @@ func (c *Client) loop() error {
 				continue
 			}
 
+			// If we are joinning a channel we'll store the
+			// current user and current host in the client, this
+			// will be used to calculate the correct number of
+			// bytes that we are allowed to send to the server.
+			if m.Command == "JOIN" && m.Name == c.currentNick {
+				c.infoMu.Lock()
+				c.currentUser = m.User
+				c.currentHost = m.Host
+				c.infoMu.Unlock()
+			}
+
 			// Send the message to the event hub
 			// We use the command as event name
 			c.hub.Send(m.Command, m)

@@ -27,11 +27,13 @@ type Client struct {
 
 	// Client related variables
 	nick        string
-	currentNick string
 	user        string
 	realName    string
 	channels    []string
 	version     string
+	currentNick string
+	currentUser string
+	currentHost string
 	infoMu      sync.Mutex
 
 	// If this is true, all output will be logged

@@ -2,6 +2,7 @@ package irc
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/osm/ww"
 )
@@ -42,10 +43,16 @@ func (c *Client) Sendf(format string, args ...interface{}) error {
 
 // Privmsg sends a message to a channel or nick
 func (c *Client) Privmsg(target, message string) error {
+	prefix := fmt.Sprintf(": %s!%s@%s", c.currentNick, c.currentUser, c.currentHost)
 	cmd := fmt.Sprintf("PRIVMSG %s :", target)
-	for _, m := range ww.Wrap(message, 510-len(cmd)) {
+
+	for i, m := range ww.Wrap(message, 510-len(prefix)-len(cmd)) {
 		if err := c.Sendf("%s%s", cmd, m); err != nil {
 			return err
+		}
+
+		if i >= 1 {
+			time.Sleep(time.Millisecond * 500)
 		}
 	}
 
@@ -59,11 +66,16 @@ func (c *Client) Privmsgf(target, format string, args ...interface{}) error {
 
 // Notice sends a notice
 func (c *Client) Notice(target, message string) error {
+	prefix := fmt.Sprintf(": %s!%s@%s", c.currentNick, c.currentUser, c.currentHost)
 	cmd := fmt.Sprintf("NOTICE %s :", target)
 
-	for _, m := range ww.Wrap(message, 510-len(cmd)) {
+	for i, m := range ww.Wrap(message, 510-len(prefix)-len(cmd)) {
 		if err := c.Sendf("%s%s", cmd, m); err != nil {
 			return err
+		}
+
+		if i >= 1 {
+			time.Sleep(time.Millisecond * 500)
 		}
 	}
 
